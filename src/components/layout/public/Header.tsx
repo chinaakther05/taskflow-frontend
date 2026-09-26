@@ -1,3 +1,5 @@
+import Logo from "@/components/shared/Logo";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 export default function Header() {
@@ -9,16 +11,24 @@ const routes = [
 ]
 
     return (
-        <header className="w-full h-16 border border-b justify-center items-center flex">
-           
-            <nav className ="flex  gap-5">
-                { routes.map((route) => (
-                 <Link key={route.url} href={route.url}>
-                   {route.name}
-                 </Link>
-                 ))}
-            </nav>
-     
+        <header className="w-full h-16 border-b flex items-center">
+      <div className="flex justify-between items-center w-full max-w-7xl mx-auto px-4">
+        <Logo/>
+
+        <nav className="flex gap-5">
+          {routes.map((route) => (
+            <Link key={route.url} href={route.url}>
+              {route.name}
+            </Link>
+          ))}
+        </nav>
+
+        <Button
+          variant="outline"
+          render={<Link href="/login">Login</Link>}
+          nativeButton={false}
+        />
+      </div>
     </header>
  );
 };
