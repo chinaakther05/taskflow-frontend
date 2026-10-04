@@ -34,3 +34,15 @@ export function useGetMe() {
 export function googleOAuth(payload: { idToken: string }) {
   return apiClient("/auth/google", { method: "POST", body: payload });
 };
+
+
+export function userRegister(payload: {
+  name: string;
+  email: string;
+  password: string;
+}) {
+  return apiClient("/auth/register", {
+    method: "POST",
+    body: payload,
+  });
+}

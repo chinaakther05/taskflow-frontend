@@ -7,6 +7,7 @@ import { toast } from "@/components/ui/toast";
 import { useGetMe, useLogout } from "@/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import ThemeToggle from "@/components/themeToggle";
 
 export default function Header() {
   const routes = [
@@ -63,7 +64,9 @@ export default function Header() {
           ))}
         </nav>
 
-        <div>
+    <div>
+        <ThemeToggle />
+
   {!isLoading && (!data || isLoggedOut) && (
     <Button
       variant="outline"
