@@ -4,10 +4,11 @@ import { GoogleLogin } from "@react-oauth/google";
 import { useGoogleOAuth } from "@/hooks";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/toast";
-
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function GoogleInComponent() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const { mutate: googleLogin } = useGoogleOAuth();
 
@@ -31,10 +32,16 @@ export default function GoogleInComponent() {
       { idToken },
       {
         onSuccess: (res) => {
+          console.log("GOOGLE LOGIN RESPONSE:", res);
+          console.log("GOOGLE AVATAR:", res.data.user?.avatar);
           localStorage.setItem(
             "accessToken",
             res.data.accessToken
           );
+
+           queryClient.invalidateQueries({
+    queryKey: ["me"],
+  });
 
           toast.add({
             title: "Login Success",

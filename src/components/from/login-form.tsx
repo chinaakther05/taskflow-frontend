@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from "@tanstack/react-form";
@@ -22,11 +23,11 @@ import Link from "next/link";
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const [demoRole, setDemoRole] = useState("");
+
   const router = useRouter();
 
   const { mutate: login, isPending: loginPending } = useLogin();
-
-  const [demoRole, setDemoRole] = useState<string>("");
 
   const form = useForm({
     defaultValues: {
@@ -38,6 +39,7 @@ export default function LoginForm() {
       onSubmit: loginSchema,
     },
 
+    // Normal Login
     onSubmit: ({ value }) => {
       const loginData = {
         email: value.email,
@@ -75,9 +77,8 @@ export default function LoginForm() {
 
   return (
     <div className="flex flex-col gap-5">
-
       {/* Login Heading */}
-      <div className="flex flex-col gap-2 items-center text-center">
+      <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-2xl font-bold tracking-tight">
           Login to your account
         </h1>
@@ -95,7 +96,6 @@ export default function LoginForm() {
         }}
       >
         <FieldGroup>
-
           {/* Email */}
           <form.Field name="email">
             {(field) => {
@@ -208,96 +208,102 @@ export default function LoginForm() {
           </Button>
 
           {/* Demo Login */}
-          <div className="mt-2 rounded-lg border p-4">
+          
+<div className="mt-2 rounded-lg border p-4">
+  <p className="mb-3 text-center text-sm font-medium">
+    Demo Login
+  </p>
 
-            <p className="mb-3 text-center text-sm font-medium">
-              Demo Login
-            </p>
+  <select
+    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+    value={demoRole}
+    onChange={(e) => setDemoRole(e.target.value)}
+  >
+    <option value="">
+      Select demo account
+    </option>
 
-            <select
-              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-              value={demoRole}
-              onChange={(e) =>
-                setDemoRole(e.target.value)
-              }
-            >
-              <option value="">
-                Select demo account
-              </option>
+    <option value="admin">
+      Admin
+    </option>
 
-              <option value="admin">
-                Admin
-              </option>
+    <option value="manager">
+      Project Manager
+    </option>
 
-              <option value="manager">
-                Project Manager
-              </option>
+    <option value="member">
+      Member
+    </option>
+  </select>
 
-              <option value="member">
-                Member
-              </option>
-            </select>
+  <Button
+    type="button"
+    variant="outline"
+    className="mt-3 w-full"
+    disabled={!demoRole || loginPending}
+    onClick={() => {
+      const credentials = {
+        admin: {
+          email: "sohag@test.com",
+          password: "Sohag@123",
+        },
 
-            <Button
-              type="button"
-              variant="outline"
-              className="mt-3 w-full"
-              disabled={!demoRole || loginPending}
-              onClick={() => {
-                const credentials = {
-                  admin: {
-                    email: "sohag@test.com",
-                    password: "Sohag@123",
-                  },
+        manager: {
+          email: "manager@taskflow.com",
+          password: "Manager@123",
+        },
 
-                  manager: {
-                    email: "manager@taskflow.com",
-                    password: "Manager@123",
-                  },
+        member: {
+          email: "member@taskflow.com",
+          password: "Member@123",
+        },
+      };
 
-                  member: {
-                    email: "member@taskflow.com",
-                    password: "Member@123",
-                  },
-                };
+      const selected =
+        credentials[
+          demoRole as keyof typeof credentials
+        ];
 
-                const selected =
-                  credentials[
-                    demoRole as keyof typeof credentials
-                  ];
+      login(selected, {
+        onSuccess: (res) => {
+          localStorage.setItem(
+            "accessToken",
+            res.data.accessToken
+          );
 
-                login(selected, {
-                  onSuccess: (res) => {
-                    localStorage.setItem(
-                      "accessToken",
-                      res.data.accessToken
-                    );
+          toast.add({
+            title: "Login Success",
+            description:
+              "Demo account login successful",
+            type: "success",
+          });
 
-                    toast.add({
-                      title: "Login Success",
-                      description:
-                        "Demo account login successful",
-                      type: "success",
-                    });
+          // Demo role অনুযায়ী dashboard
+          if (demoRole === "admin") {
+            window.location.href = "/Admin";
+          } else if (demoRole === "manager") {
+            window.location.href = "/project-manager";
+          } else if (demoRole === "member") {
+            window.location.href = "/member";
+          }
+        },
 
-                    router.push("/");
-                  },
+        onError: (err) => {
+          toast.add({
+            title: "Demo Login Failed",
+            description:
+              err.message ||
+              "Something went wrong",
+            type: "error",
+          });
+        },
+      });
+    }}
+  >
+    Continue Demo Login
+  </Button>
+</div>
 
-                  onError: (err) => {
-                    toast.add({
-                      title: "Demo Login Failed",
-                      description:
-                        err.message ||
-                        "Something went wrong",
-                      type: "error",
-                    });
-                  },
-                });
-              }}
-            >
-              Continue Demo Login
-            </Button>
-          </div>
 
         </FieldGroup>
       </form>
@@ -320,7 +326,7 @@ export default function LoginForm() {
           Register
         </Link>
       </div>
-
     </div>
   );
 }
+
