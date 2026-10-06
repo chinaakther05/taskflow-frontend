@@ -38,6 +38,21 @@ const navigation = [
     icon: CheckSquare,
   },
   {
+    name: "Requests",
+    href: "/Admin/requests",
+    icon: CheckSquare,
+  },
+  {
+    name: "Payments",
+    href: "/Admin/payments",
+    icon: BarChart3,
+  },
+  {
+    name: "Subscription",
+    href: "/Admin/subscription",
+    icon: BarChart3,
+  },
+  {
     name: "Team",
     href: "/Admin/team",
     icon: Users,
