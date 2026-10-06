@@ -53,15 +53,11 @@ const navigation = [
     icon: BarChart3,
   },
   {
-    name: "Team",
-    href: "/Admin/team",
-    icon: Users,
-  },
-  {
-    name: "Reports",
-    href: "/Admin/reports",
-    icon: BarChart3,
-  },
+    name: "Settings",
+    href: "/Admin/settings",
+    icon: Settings,
+  }
+ 
 ];
 
 const DashboardLayout = ({

@@ -20,9 +20,7 @@ import {
 } from "lucide-react";
 
 import apiClient from "@/lib/apiClient";
-
-const ORGANIZATION_ID =
-  "aa794cc7-613f-4234-b7ff-c8e4e649e0e4";
+import { getMyOrganizations } from "@/api/organization";
 
 const PRIORITIES = [
   "LOW",
@@ -41,6 +39,17 @@ const STATUSES = [
 
 type Priority = (typeof PRIORITIES)[number];
 type Status = (typeof STATUSES)[number];
+
+type Organization = {
+  id: string;
+  name: string;
+};
+
+type OrganizationsResponse = {
+  success: boolean;
+  message: string;
+  data: Organization[];
+};
 
 type Project = {
   id: string;
@@ -135,15 +144,19 @@ type UpdateTaskPayload = {
    API Functions
 -------------------------------------------------- */
 
-async function getProjects(): Promise<ProjectsResponse> {
+async function getProjects(
+  organizationId: string,
+): Promise<ProjectsResponse> {
   return apiClient<ProjectsResponse>(
-    `/projects/organization/${ORGANIZATION_ID}`,
+    `/projects/organization/${organizationId}`,
   );
 }
 
-async function getMembers(): Promise<MembersResponse> {
+async function getMembers(
+  organizationId: string,
+): Promise<MembersResponse> {
   return apiClient<MembersResponse>(
-    `/organization-members/${ORGANIZATION_ID}`,
+    `/organization-members/${organizationId}`,
   );
 }
 
@@ -229,14 +242,6 @@ const formatDeadlineForApi = (
     minutes,
   );
 
-  /*
-   * Important:
-   * Check every date part.
-   * This prevents invalid dates such as:
-   * 2026-02-31
-   * 2026-13-10
-   * etc.
-   */
   if (
     date.getFullYear() !== year ||
     date.getMonth() !== month - 1 ||
@@ -268,15 +273,19 @@ const formatDeadlineForInput = (
   }
 
   const year = date.getFullYear();
+
   const month = String(
     date.getMonth() + 1,
   ).padStart(2, "0");
+
   const day = String(
     date.getDate(),
   ).padStart(2, "0");
+
   const hours = String(
     date.getHours(),
   ).padStart(2, "0");
+
   const minutes = String(
     date.getMinutes(),
   ).padStart(2, "0");
@@ -343,6 +352,7 @@ export default function TasksPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] =
     useState("");
+
   const [assigneeId, setAssigneeId] =
     useState("");
 
@@ -359,6 +369,26 @@ export default function TasksPage() {
     useState("");
 
   /* --------------------------------------------------
+     Organizations
+  -------------------------------------------------- */
+
+  const {
+    data: organizationsData,
+    isLoading: organizationsLoading,
+    isError: organizationsError,
+  } = useQuery<OrganizationsResponse>({
+    queryKey: ["my-organizations"],
+    queryFn: getMyOrganizations,
+    retry: false,
+  });
+
+  const organizations =
+    organizationsData?.data ?? [];
+
+  const organizationId =
+    organizations[0]?.id;
+
+  /* --------------------------------------------------
      Projects
   -------------------------------------------------- */
 
@@ -369,9 +399,11 @@ export default function TasksPage() {
   } = useQuery<ProjectsResponse>({
     queryKey: [
       "projects",
-      ORGANIZATION_ID,
+      organizationId,
     ],
-    queryFn: getProjects,
+    queryFn: () =>
+      getProjects(organizationId!),
+    enabled: Boolean(organizationId),
     retry: false,
   });
 
@@ -385,9 +417,11 @@ export default function TasksPage() {
   } = useQuery<MembersResponse>({
     queryKey: [
       "organization-members",
-      ORGANIZATION_ID,
+      organizationId,
     ],
-    queryFn: getMembers,
+    queryFn: () =>
+      getMembers(organizationId!),
+    enabled: Boolean(organizationId),
     retry: false,
   });
 
@@ -791,6 +825,57 @@ export default function TasksPage() {
 
     setIsCreateOpen(false);
   };
+
+  /* --------------------------------------------------
+     Organizations Loading
+  -------------------------------------------------- */
+
+  if (organizationsLoading) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="size-5 animate-spin" />
+          Loading organization...
+        </div>
+      </div>
+    );
+  }
+
+  /* --------------------------------------------------
+     Organization Error
+  -------------------------------------------------- */
+
+  if (organizationsError) {
+    return (
+      <div className="rounded-xl border bg-background p-6">
+        <h2 className="text-lg font-semibold">
+          Failed to load organization
+        </h2>
+
+        <p className="mt-1 text-sm text-muted-foreground">
+          Something went wrong while loading your organization.
+        </p>
+      </div>
+    );
+  }
+
+  /* --------------------------------------------------
+     No Organization
+  -------------------------------------------------- */
+
+  if (!organizationId) {
+    return (
+      <div className="rounded-xl border bg-background p-6">
+        <h2 className="text-lg font-semibold">
+          No organization found
+        </h2>
+
+        <p className="mt-1 text-sm text-muted-foreground">
+          You are not a member of any organization yet.
+        </p>
+      </div>
+    );
+  }
 
   /* --------------------------------------------------
      Projects Loading

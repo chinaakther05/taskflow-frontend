@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   CalendarDays,
   FolderKanban,
@@ -13,9 +17,16 @@ import {
 } from "lucide-react";
 
 import apiClient from "@/lib/apiClient";
+import { getMyOrganizations } from "@/api/organization";
 
-const ORGANIZATION_ID =
-  "aa794cc7-613f-4234-b7ff-c8e4e649e0e4";
+type Role = "ADMIN" | "PROJECT_MANAGER" | "MEMBER";
+
+type Organization = {
+  id: string;
+  name: string;
+  slug: string;
+  myRole: Role;
+};
 
 type Project = {
   id: string;
@@ -52,9 +63,11 @@ type CreateProjectResponse = {
   data: Project;
 };
 
-async function getProjects(): Promise<ProjectsResponse> {
+async function getProjects(
+  organizationId: string,
+): Promise<ProjectsResponse> {
   return apiClient<ProjectsResponse>(
-    `/projects/organization/${ORGANIZATION_ID}`,
+    `/projects/organization/${organizationId}`,
   );
 }
 
@@ -75,14 +88,33 @@ export default function ProjectsPage() {
   const [description, setDescription] = useState("");
   const [formError, setFormError] = useState("");
 
+  // Get user's organizations
+  const {
+    data: organizationData,
+    isLoading: organizationLoading,
+    isError: organizationError,
+  } = useQuery({
+    queryKey: ["organizations"],
+    queryFn: getMyOrganizations,
+  });
+
+  const organizations: Organization[] =
+    organizationData?.data ?? [];
+
+  // Current organization
+  const organization = organizations[0];
+  const organizationId = organization?.id;
+
+  // Get projects
   const {
     data,
-    isLoading,
-    isError,
+    isLoading: projectsLoading,
+    isError: projectsError,
     error,
   } = useQuery<ProjectsResponse>({
-    queryKey: ["projects", ORGANIZATION_ID],
-    queryFn: getProjects,
+    queryKey: ["projects", organizationId],
+    queryFn: () => getProjects(organizationId as string),
+    enabled: Boolean(organizationId),
     retry: false,
   });
 
@@ -91,7 +123,7 @@ export default function ProjectsPage() {
 
     onSuccess: async () => {
       await queryClient.invalidateQueries({
-        queryKey: ["projects", ORGANIZATION_ID],
+        queryKey: ["projects", organizationId],
       });
 
       setName("");
@@ -126,10 +158,16 @@ export default function ProjectsPage() {
       return;
     }
 
+    if (!organizationId) {
+      setFormError("Organization not found.");
+      return;
+    }
+
     createProjectMutation.mutate({
-      organizationId: ORGANIZATION_ID,
+      organizationId,
       name: trimmedName,
-      description: trimmedDescription || undefined,
+      description:
+        trimmedDescription || undefined,
     });
   };
 
@@ -149,7 +187,64 @@ export default function ProjectsPage() {
     setFormError("");
   };
 
-  if (isLoading) {
+  // Organization loading
+  if (organizationLoading) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="size-5 animate-spin" />
+          Loading organization...
+        </div>
+      </div>
+    );
+  }
+
+  // Organization error
+  if (organizationError) {
+    return (
+      <div className="rounded-xl border bg-background p-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10">
+            <FolderKanban className="size-5 text-destructive" />
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold">
+              Failed to load organization
+            </h2>
+
+            <p className="mt-1 text-sm text-muted-foreground">
+              Something went wrong while loading
+              your organization.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // No organization
+  if (!organizationId) {
+    return (
+      <div className="flex min-h-[350px] flex-col items-center justify-center rounded-xl border bg-background p-6 text-center shadow-sm">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+          <FolderKanban className="size-5 text-muted-foreground" />
+        </div>
+
+        <h2 className="mt-4 font-semibold">
+          No organization found
+        </h2>
+
+        <p className="mt-1 max-w-md text-sm text-muted-foreground">
+          You are not currently a member of any
+          organization.
+        </p>
+      </div>
+    );
+  }
+
+  // Projects loading
+  if (projectsLoading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
         <div className="flex items-center gap-2 text-muted-foreground">
@@ -160,7 +255,8 @@ export default function ProjectsPage() {
     );
   }
 
-  if (isError) {
+  // Projects error
+  if (projectsError) {
     return (
       <div className="rounded-xl border bg-background p-6">
         <div className="flex items-center gap-3">
@@ -199,6 +295,7 @@ export default function ProjectsPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          {/* Project Count */}
           <div className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm">
             <FolderKanban className="size-4 text-muted-foreground" />
 
@@ -213,6 +310,7 @@ export default function ProjectsPage() {
             </span>
           </div>
 
+          {/* Create Button */}
           <button
             type="button"
             onClick={openCreateForm}
@@ -221,6 +319,26 @@ export default function ProjectsPage() {
             <Plus className="size-4" />
             Create Project
           </button>
+        </div>
+      </div>
+
+      {/* Organization Info */}
+      <div className="rounded-xl border bg-background p-4 shadow-sm">
+        <p className="text-xs text-muted-foreground">
+          Organization
+        </p>
+
+        <div className="mt-1 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <p className="font-medium">
+            {organization.name}
+          </p>
+
+          <p className="text-xs text-muted-foreground">
+            Your role:{" "}
+            <span className="font-medium text-foreground">
+              {organization.myRole.replace("_", " ")}
+            </span>
+          </p>
         </div>
       </div>
 
@@ -275,11 +393,15 @@ export default function ProjectsPage() {
                 }}
                 placeholder="e.g. TaskFlow Platform"
                 maxLength={100}
-                className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
+                disabled={
+                  createProjectMutation.isPending
+                }
+                className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
               />
 
               <p className="text-xs text-muted-foreground">
-                Give your project a clear and meaningful name.
+                Give your project a clear and meaningful
+                name.
               </p>
             </div>
 
@@ -308,7 +430,10 @@ export default function ProjectsPage() {
                 placeholder="What is this project about?"
                 rows={4}
                 maxLength={500}
-                className="w-full resize-none rounded-lg border bg-background px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
+                disabled={
+                  createProjectMutation.isPending
+                }
+                className="w-full resize-none rounded-lg border bg-background px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
               />
 
               <div className="flex justify-between text-xs text-muted-foreground">
@@ -329,11 +454,12 @@ export default function ProjectsPage() {
               </p>
 
               <p className="mt-1 text-sm font-medium">
-                Creative Workspace
+                {organization.name}
               </p>
 
               <p className="mt-1 text-xs text-muted-foreground">
-                The project will be created in this organization.
+                The project will be created in this
+                organization.
               </p>
             </div>
 
@@ -352,7 +478,9 @@ export default function ProjectsPage() {
               <button
                 type="button"
                 onClick={closeCreateForm}
-                disabled={createProjectMutation.isPending}
+                disabled={
+                  createProjectMutation.isPending
+                }
                 className="rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
@@ -391,7 +519,8 @@ export default function ProjectsPage() {
           </h2>
 
           <p className="mt-1 max-w-md text-sm text-muted-foreground">
-            There are no active projects in this organization yet.
+            There are no active projects in this
+            organization yet.
           </p>
 
           <button
