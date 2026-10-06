@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -44,6 +43,27 @@ export default function Header() {
 
   const firstLetter =
     user?.name?.charAt(0).toUpperCase() || "U";
+
+  /*
+   * Dashboard route
+   *
+   * First we check role if the API provides it.
+   * Then we use demo account email as fallback.
+   */
+  const dashboardPath =
+    user?.role === "ADMIN"
+      ? "/Admin"
+      : user?.role === "PROJECT_MANAGER"
+        ? "/project-manager"
+        : user?.role === "MEMBER"
+          ? "/member"
+          : user?.email === "sohag@test.com"
+            ? "/Admin"
+            : user?.email === "manager@taskflow.com"
+              ? "/project-manager"
+              : user?.email === "member@taskflow.com"
+                ? "/member"
+                : "/Admin";
 
   const handleLogout = () => {
     logout(undefined, {
@@ -169,8 +189,12 @@ export default function Header() {
                         </p>
                       </div>
 
+
+
+                      {/* Dashboard */}
+                      
                       <Link
-                        href="/dashboard"
+                        href={dashboardPath}
                         onClick={() =>
                           setIsDropdownOpen(false)
                         }
@@ -180,6 +204,7 @@ export default function Header() {
                         Dashboard
                       </Link>
 
+                      {/* Profile */}
                       <Link
                         href="/profile"
                         onClick={() =>
@@ -191,6 +216,7 @@ export default function Header() {
                         Profile
                       </Link>
 
+                      {/* Logout */}
                       <button
                         type="button"
                         onClick={handleLogout}

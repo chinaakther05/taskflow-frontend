@@ -29,22 +29,22 @@ const navigation = [
   },
   {
     name: "Projects",
-    href: "/projects",
+    href: "/Admin/projects",
     icon: FolderKanban,
   },
   {
     name: "Tasks",
-    href: "/tasks",
+    href: "/Admin/tasks",
     icon: CheckSquare,
   },
   {
     name: "Team",
-    href: "/team",
+    href: "/Admin/team",
     icon: Users,
   },
   {
     name: "Reports",
-    href: "/reports",
+    href: "/Admin/reports",
     icon: BarChart3,
   },
 ];
