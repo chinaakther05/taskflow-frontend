@@ -83,9 +83,10 @@ const projectManagerNavigation = [
   },
   {
     name: "Settings",
-    href: "/settings",
+    href: "/project-manager/settings",
     icon: Settings,
-  },
+  }
+ 
 ];
 
 const memberNavigation = [
