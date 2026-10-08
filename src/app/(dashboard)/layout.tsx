@@ -101,15 +101,17 @@ const memberNavigation = [
     icon: FolderKanban,
   },
   {
-    name: "Tasks",
-    href: "/member/tasks",
+    name: "my-tasks",
+    href: "/member/my-tasks",
     icon: CheckSquare,
   },
   {
     name: "Settings",
-    href: "/settings",
+    href: "/member/settings",
     icon: Settings,
   },
+ 
+ 
 ];
 
 const DashboardLayout = ({

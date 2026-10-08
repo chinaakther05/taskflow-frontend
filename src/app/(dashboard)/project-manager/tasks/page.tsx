@@ -1,26 +1,48 @@
 
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import {
-  CheckCircle2,
-  CircleAlert,
-  Clock3,
-  ListTodo,
-} from "lucide-react";
-
+import { useEffect, useState } from "react";
 import apiClient from "@/lib/apiClient";
 import { getMyOrganizations } from "@/api/organization";
+import { useGetMe } from "@/hooks";
 
-type Organization = {
+
+type TaskStatus =
+  | "PENDING_ACCEPTANCE"
+  | "TODO"
+  | "IN_PROGRESS"
+  | "IN_REVIEW"
+  | "DONE";
+
+type TaskPriority =
+  | "LOW"
+  | "MEDIUM"
+  | "HIGH"
+  | "URGENT";
+
+type Task = {
   id: string;
-  name: string;
-};
-
-type OrganizationResponse = {
-  success: boolean;
-  message: string;
-  data: Organization[];
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  priority: TaskPriority;
+  createdAt: string;
+  deadline: string | null;
+  assignee: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
+  creator: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  _count: {
+    comments: number;
+    timeLogs: number;
+    attachments: number;
+  };
 };
 
 type Project = {
@@ -28,128 +50,218 @@ type Project = {
   name: string;
 };
 
-type ProjectsResponse = {
-  success: boolean;
-  message: string;
-  data: Project[];
-};
+const MyTasksPage = () => {
+  const { data: userResponse } = useGetMe();
 
-type Task = {
-  id: string;
-  title: string;
-  description: string | null;
-  status: string;
-  priority: string;
-  createdAt: string;
-  project?: {
-    id: string;
-    name: string;
-  };
-  assignee?: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string | null;
-  } | null;
-};
+  const user = userResponse?.data;
 
-type TasksResponse = {
-  success: boolean;
-  message: string;
-  data: Task[];
-};
-
-const ManagerTasksPage = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(
+    null,
+  );
   const [error, setError] = useState("");
 
-  const fetchTasks = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError("");
+  useEffect(() => {
+    const loadTasks = async () => {
+      try {
+        setIsLoading(true);
+        setError("");
 
-      // Get current organization
-      const organizationResponse =
-        (await getMyOrganizations()) as OrganizationResponse;
+        // Get current organization
+        const organizationResponse = await getMyOrganizations();
 
-      const organization = organizationResponse.data?.[0];
+        const organization = organizationResponse.data?.[0];
 
-      if (!organization?.id) {
-        throw new Error("No organization found");
-      }
+        if (!organization?.id) {
+          throw new Error("No organization found");
+        }
 
-      // Get organization's projects
-      const projectsResponse =
-        await apiClient<ProjectsResponse>(
-          `/projects/organization/${organization.id}`,
+        // Get organization projects
+        const projectResponse = await apiClient<{
+          success: boolean;
+          message: string;
+          data: Project[];
+        }>(`/projects/organization/${organization.id}`);
+
+        const organizationProjects = projectResponse.data || [];
+
+        setProjects(organizationProjects);
+
+        // Get tasks from every project
+        const taskResponses = await Promise.all(
+          organizationProjects.map((project) =>
+            apiClient<{
+              success: boolean;
+              message: string;
+              data: Task[];
+            }>(`/tasks/project/${project.id}`),
+          ),
         );
 
-      const projects = projectsResponse.data || [];
+        // Combine all tasks
+        const allTasks = taskResponses.flatMap(
+          (response) => response.data || [],
+        );
 
-      // Get tasks from every project
-      const taskResponses = await Promise.all(
-        projects.map((project) =>
-          apiClient<TasksResponse>(
-            `/tasks/project/${project.id}`,
-          ),
+        // Only tasks assigned to current logged-in member
+        const myTasks = allTasks.filter(
+          (task) => task.assignee?.id === user?.id,
+        );
+
+        setTasks(myTasks);
+      } catch (err) {
+        console.error("Failed to load tasks:", err);
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load your tasks.",
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (user?.id) {
+      loadTasks();
+    }
+  }, [user?.id]);
+
+  // Update task status
+  const updateTaskStatus = async (
+    taskId: string,
+    status: TaskStatus,
+  ) => {
+    try {
+      setUpdatingTaskId(taskId);
+      setError("");
+
+      await apiClient(`/tasks/${taskId}`, {
+        method: "PATCH",
+        body: {
+          status,
+        },
+      });
+
+      // Update UI immediately
+      setTasks((currentTasks) =>
+        currentTasks.map((task) =>
+          task.id === taskId
+            ? {
+                ...task,
+                status,
+              }
+            : task,
         ),
       );
-
-      // Combine all project tasks
-      const allTasks = taskResponses.flatMap(
-        (response, index) =>
-          (response.data || []).map((task) => ({
-            ...task,
-            project: {
-              id: projects[index].id,
-              name: projects[index].name,
-            },
-          })),
-      );
-
-      setTasks(allTasks);
     } catch (err) {
-      console.error("Failed to load tasks:", err);
+      console.error("Failed to update task status:", err);
 
       setError(
-        err instanceof Error ? err.message : "Failed to load tasks",
+        err instanceof Error
+          ? err.message
+          : "Failed to update task status.",
       );
     } finally {
-      setLoading(false);
+      setUpdatingTaskId(null);
     }
-  }, []);
-
-  useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
-
-  const totalTasks = tasks.length;
-
-  const completedTasks = tasks.filter(
-    (task) => task.status === "COMPLETED",
-  ).length;
+  };
 
   const pendingTasks = tasks.filter(
-    (task) =>
-      task.status !== "COMPLETED" &&
-      task.status !== "CANCELLED",
+    (task) => task.status !== "DONE",
   ).length;
 
-  const highPriorityTasks = tasks.filter(
-    (task) => task.priority === "HIGH",
+  const completedTasks = tasks.filter(
+    (task) => task.status === "DONE",
   ).length;
+
+  const getStatusLabel = (status: TaskStatus) => {
+    switch (status) {
+      case "PENDING_ACCEPTANCE":
+        return "Pending Acceptance";
+
+      case "TODO":
+        return "Todo";
+
+      case "IN_PROGRESS":
+        return "In Progress";
+
+      case "IN_REVIEW":
+        return "In Review";
+
+      case "DONE":
+        return "Completed";
+
+      default:
+        return status;
+    }
+  };
+
+  const getPriorityClass = (priority: TaskPriority) => {
+    switch (priority) {
+      case "URGENT":
+        return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+
+      case "HIGH":
+        return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";
+
+      case "MEDIUM":
+        return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400";
+
+      case "LOW":
+        return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+
+      default:
+        return "bg-muted text-muted-foreground";
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        {/* Header Skeleton */}
+        <div>
+          <div className="h-8 w-40 animate-pulse rounded bg-muted" />
+          <div className="mt-2 h-4 w-64 animate-pulse rounded bg-muted" />
+        </div>
+
+        {/* Stats Skeleton */}
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="h-28 animate-pulse rounded-lg bg-muted"
+            />
+          ))}
+        </div>
+
+        {/* Table Skeleton */}
+        <div className="rounded-lg border p-6">
+          <div className="space-y-4">
+            {[1, 2, 3].map((item) => (
+              <div
+                key={item}
+                className="h-12 animate-pulse rounded bg-muted"
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">
-          Task Management
+          My Tasks
         </h1>
 
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage and monitor tasks across your projects.
+          View and update tasks assigned to you.
         </p>
       </div>
 
@@ -161,144 +273,85 @@ const ManagerTasksPage = () => {
       )}
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Total Tasks */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        {/* My Tasks */}
         <div className="rounded-xl border bg-card p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Total Tasks
-              </p>
+          <p className="text-sm text-muted-foreground">
+            My Tasks
+          </p>
 
-              <p className="mt-2 text-2xl font-bold">
-                {loading ? "—" : totalTasks}
-              </p>
-            </div>
-
-            <div className="rounded-lg bg-primary/10 p-3">
-              <ListTodo className="h-5 w-5 text-primary" />
-            </div>
-          </div>
-        </div>
-
-        {/* Completed */}
-        <div className="rounded-xl border bg-card p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Completed
-              </p>
-
-              <p className="mt-2 text-2xl font-bold">
-                {loading ? "—" : completedTasks}
-              </p>
-            </div>
-
-            <div className="rounded-lg bg-green-100 p-3 dark:bg-green-900/30">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-            </div>
-          </div>
+          <p className="mt-2 text-3xl font-bold">
+            {tasks.length}
+          </p>
         </div>
 
         {/* Pending */}
         <div className="rounded-xl border bg-card p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Pending
-              </p>
+          <p className="text-sm text-muted-foreground">
+            Pending
+          </p>
 
-              <p className="mt-2 text-2xl font-bold">
-                {loading ? "—" : pendingTasks}
-              </p>
-            </div>
-
-            <div className="rounded-lg bg-yellow-100 p-3 dark:bg-yellow-900/30">
-              <Clock3 className="h-5 w-5 text-yellow-600" />
-            </div>
-          </div>
-        </div>
-
-        {/* High Priority */}
-        <div className="rounded-xl border bg-card p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                High Priority
-              </p>
-
-              <p className="mt-2 text-2xl font-bold">
-                {loading ? "—" : highPriorityTasks}
-              </p>
-            </div>
-
-            <div className="rounded-lg bg-red-100 p-3 dark:bg-red-900/30">
-              <CircleAlert className="h-5 w-5 text-red-600" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tasks Table */}
-      <div className="rounded-xl border bg-card">
-        <div className="border-b p-5">
-          <h2 className="font-semibold">All Tasks</h2>
-
-          <p className="mt-1 text-sm text-muted-foreground">
-            Tasks from your organization projects.
+          <p className="mt-2 text-3xl font-bold">
+            {pendingTasks}
           </p>
         </div>
 
-        {/* Loading */}
-        {loading ? (
-          <div className="space-y-4 p-6">
-            {[1, 2, 3].map((item) => (
-              <div
-                key={item}
-                className="h-12 animate-pulse rounded-md bg-muted"
-              />
-            ))}
-          </div>
-        ) : tasks.length === 0 ? (
-          /* Empty */
-          <div className="p-10 text-center">
-            <ListTodo className="mx-auto h-10 w-10 text-muted-foreground" />
+        {/* Completed */}
+        <div className="rounded-xl border bg-card p-5">
+          <p className="text-sm text-muted-foreground">
+            Completed
+          </p>
 
-            <h3 className="mt-4 font-semibold">
-              No tasks found
+          <p className="mt-2 text-3xl font-bold">
+            {completedTasks}
+          </p>
+        </div>
+      </div>
+
+      {/* Assigned Tasks */}
+      <div className="rounded-xl border bg-card">
+        <div className="border-b p-5">
+          <h2 className="font-semibold">
+            Assigned Tasks
+          </h2>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            Tasks assigned to you by your project manager.
+          </p>
+        </div>
+
+        {tasks.length === 0 ? (
+          <div className="p-10 text-center">
+            <h3 className="font-semibold">
+              No tasks assigned to you.
             </h3>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              There are no tasks in your organization yet.
+              Your assigned tasks will appear here.
             </p>
           </div>
         ) : (
-          /* Table */
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px]">
+            <table className="w-full min-w-[850px]">
               <thead>
                 <tr className="border-b text-left text-sm text-muted-foreground">
-                  <th className="px-5 py-4 font-medium">
+                  <th className="px-6 py-4 font-medium">
                     Task
                   </th>
 
-                  <th className="px-5 py-4 font-medium">
-                    Project
-                  </th>
-
-                  <th className="px-5 py-4 font-medium">
-                    Status
-                  </th>
-
-                  <th className="px-5 py-4 font-medium">
+                  <th className="px-6 py-4 font-medium">
                     Priority
                   </th>
 
-                  <th className="px-5 py-4 font-medium">
-                    Assignee
+                  <th className="px-6 py-4 font-medium">
+                    Status
                   </th>
 
-                  <th className="px-5 py-4 font-medium">
+                  <th className="px-6 py-4 font-medium">
+                    Deadline
+                  </th>
+
+                  <th className="px-6 py-4 font-medium">
                     Created
                   </th>
                 </tr>
@@ -311,68 +364,86 @@ const ManagerTasksPage = () => {
                     className="border-b last:border-0 hover:bg-muted/40"
                   >
                     {/* Task */}
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-4">
                       <div>
                         <p className="font-medium">
                           {task.title}
                         </p>
 
                         {task.description && (
-                          <p className="mt-1 max-w-xs truncate text-sm text-muted-foreground">
+                          <p className="mt-1 max-w-md truncate text-sm text-muted-foreground">
                             {task.description}
                           </p>
                         )}
                       </div>
                     </td>
 
-                    {/* Project */}
-                    <td className="px-5 py-4">
-                      {task.project?.name || "—"}
-                    </td>
-
-                    {/* Status */}
-                    <td className="px-5 py-4">
-                      <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                        {task.status}
-                      </span>
-                    </td>
-
                     {/* Priority */}
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-4">
                       <span
-                        className={`rounded-full px-3 py-1 text-xs font-medium ${
-                          task.priority === "HIGH"
-                            ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                            : task.priority === "MEDIUM"
-                              ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-                              : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                        }`}
+                        className={`rounded-full px-3 py-1 text-xs font-medium ${getPriorityClass(
+                          task.priority,
+                        )}`}
                       >
                         {task.priority}
                       </span>
                     </td>
 
-                    {/* Assignee */}
-                    <td className="px-5 py-4">
-                      {task.assignee ? (
-                        <div>
-                          <p className="font-medium">
-                            {task.assignee.name}
-                          </p>
+                    {/* Status */}
+                    <td className="px-6 py-4">
+                      <select
+                        value={task.status}
+                        disabled={
+                          updatingTaskId === task.id
+                        }
+                        onChange={(event) =>
+                          updateTaskStatus(
+                            task.id,
+                            event.target.value as TaskStatus,
+                          )
+                        }
+                        className="rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <option value="PENDING_ACCEPTANCE">
+                          Pending Acceptance
+                        </option>
 
-                          <p className="text-xs text-muted-foreground">
-                            {task.assignee.email}
-                          </p>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">
-                          Unassigned
-                        </span>
+                        <option value="TODO">
+                          Todo
+                        </option>
+
+                        <option value="IN_PROGRESS">
+                          In Progress
+                        </option>
+
+                        <option value="IN_REVIEW">
+                          In Review
+                        </option>
+
+                        {/* Backend value = DONE */}
+                        <option value="DONE">
+                          Completed
+                        </option>
+                      </select>
+
+                      {updatingTaskId === task.id && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Updating...
+                        </p>
                       )}
                     </td>
 
+                    {/* Deadline */}
+                    <td className="px-6 py-4 text-sm">
+                      {task.deadline
+                        ? new Date(
+                            task.deadline,
+                          ).toLocaleDateString()
+                        : "No deadline"}
+                    </td>
+
                     {/* Created */}
-                    <td className="px-5 py-4 text-sm text-muted-foreground">
+                    <td className="px-6 py-4 text-sm text-muted-foreground">
                       {new Date(
                         task.createdAt,
                       ).toLocaleDateString()}
@@ -388,4 +459,5 @@ const ManagerTasksPage = () => {
   );
 };
 
-export default ManagerTasksPage;
+export default MyTasksPage;
+
