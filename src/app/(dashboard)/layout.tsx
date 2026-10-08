@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -15,8 +14,9 @@ import {
 } from "lucide-react";
 
 import Logo from "@/components/shared/Logo";
+import { useGetMe } from "@/hooks";
 
-const navigation = [
+const adminNavigation = [
   {
     name: "Dashboard",
     href: "/Admin",
@@ -56,8 +56,59 @@ const navigation = [
     name: "Settings",
     href: "/Admin/settings",
     icon: Settings,
-  }
- 
+  },
+];
+
+const projectManagerNavigation = [
+  {
+    name: "Dashboard",
+    href: "/project-manager",
+    icon: LayoutDashboard,
+  },
+  
+  {
+    name: "Projects",
+    href: "/project-manager/projects",
+    icon: FolderKanban,
+  },
+  {
+    name: "Tasks",
+    href: "/project-manager/tasks",
+    icon: CheckSquare,
+  },
+  {
+    name: "Members",
+    href: "/project-manager/members",
+    icon: Users,
+  },
+  {
+    name: "Settings",
+    href: "/settings",
+    icon: Settings,
+  },
+];
+
+const memberNavigation = [
+  {
+    name: "Dashboard",
+    href: "/member",
+    icon: LayoutDashboard,
+  },
+  {
+    name: "Projects",
+    href: "/member/projects",
+    icon: FolderKanban,
+  },
+  {
+    name: "Tasks",
+    href: "/member/tasks",
+    icon: CheckSquare,
+  },
+  {
+    name: "Settings",
+    href: "/settings",
+    icon: Settings,
+  },
 ];
 
 const DashboardLayout = ({
@@ -67,12 +118,57 @@ const DashboardLayout = ({
 }) => {
   const pathname = usePathname();
 
+  const { data, isLoading } = useGetMe();
+
+  const user = data?.data;
+
+  const role = user?.role;
+
+  /*
+   * Role detection
+   *
+   * Normally we use user.role from the API.
+   * We also check the current route so that
+   * Project Manager and Member dashboards
+   * work even if role is not returned by the API.
+   */
+  const isProjectManager =
+    role === "PROJECT_MANAGER" ||
+    pathname.startsWith("/project-manager");
+
+  const isMember =
+    role === "MEMBER" ||
+    pathname.startsWith("/member");
+
+  const navigation = isProjectManager
+    ? projectManagerNavigation
+    : isMember
+      ? memberNavigation
+      : adminNavigation;
+
+  const roleLabel = isProjectManager
+    ? "Project Manager"
+    : isMember
+      ? "Member"
+      : "Administrator";
+
+  const pageTitle = isProjectManager
+    ? "Project Manager"
+    : isMember
+      ? "Member"
+      : "Dashboard";
+
+  const firstLetter =
+    user?.name?.charAt(0).toUpperCase() || "U";
+
   return (
     <div className="min-h-screen bg-muted/30">
       <div className="flex min-h-screen">
+
         {/* Sidebar */}
         <aside className="hidden w-64 shrink-0 border-r bg-background lg:flex">
           <div className="flex w-full flex-col">
+
             {/* Logo */}
             <div className="flex h-16 items-center border-b px-6">
               <Logo />
@@ -130,7 +226,7 @@ const DashboardLayout = ({
               </nav>
             </div>
 
-            {/* Bottom */}
+            {/* Bottom Settings */}
             <div className="mt-auto border-t p-4">
               <Link
                 href="/settings"
@@ -145,21 +241,24 @@ const DashboardLayout = ({
 
         {/* Main Area */}
         <div className="flex min-w-0 flex-1 flex-col">
+
           {/* Header */}
           <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur sm:px-6">
-            {/* Mobile / Page title */}
+
+            {/* Page Title */}
             <div>
               <p className="text-xs text-muted-foreground">
                 Workspace
               </p>
 
               <h1 className="text-sm font-semibold sm:text-base">
-                Dashboard
+                {pageTitle}
               </h1>
             </div>
 
             {/* Header Actions */}
             <div className="flex items-center gap-3">
+
               {/* Notification */}
               <button
                 type="button"
@@ -177,16 +276,16 @@ const DashboardLayout = ({
               >
                 <div className="hidden text-right sm:block">
                   <p className="text-sm font-medium">
-                    Sohag
-                  </p>
+  {user?.name || "User"}
+</p>
 
-                  <p className="text-xs text-muted-foreground">
-                    Administrator
-                  </p>
+                 <p className="text-xs text-muted-foreground">
+  {roleLabel}
+</p>
                 </div>
 
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                  S
+                  {firstLetter}
                 </div>
 
                 <ChevronDown className="hidden size-4 text-muted-foreground sm:block" />
@@ -198,6 +297,7 @@ const DashboardLayout = ({
           <main className="flex-1 p-4 sm:p-6 lg:p-8">
             {children}
           </main>
+
         </div>
       </div>
     </div>
@@ -205,4 +305,3 @@ const DashboardLayout = ({
 };
 
 export default DashboardLayout;
-
