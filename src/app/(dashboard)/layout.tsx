@@ -110,6 +110,11 @@ const memberNavigation = [
     href: "/member/settings",
     icon: Settings,
   },
+  {
+    name: "Notifications", 
+    href: "/member/notifications",
+    icon: Bell,
+  }
  
  
 ];
