@@ -21,6 +21,7 @@ import { useGetMe, useLogout } from "@/hooks";
 export default function Header() {
   const routes = [
     { name: "Home", url: "/" },
+    { name: "Features", url: "/features" },
     { name: "About Us", url: "/about-us" },
     { name: "Contact", url: "/contact" },
   ];
@@ -44,12 +45,7 @@ export default function Header() {
   const firstLetter =
     user?.name?.charAt(0).toUpperCase() || "U";
 
-  /*
-   * Dashboard route
-   *
-   * First we check role if the API provides it.
-   * Then we use demo account email as fallback.
-   */
+  
   const dashboardPath =
     user?.role === "ADMIN"
       ? "/Admin"

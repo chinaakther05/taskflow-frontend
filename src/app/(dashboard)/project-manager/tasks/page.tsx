@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import apiClient from "@/lib/apiClient";
 import { getMyOrganizations } from "@/api/organization";
 
@@ -191,15 +192,7 @@ export default function ProjectManagerTasksPage() {
         return;
       }
 
-      /*
-       * HTML date input gives:
-       *
-       * 2026-10-09
-       *
-       * Backend/Prisma needs:
-       *
-       * 2026-10-09T00:00:00.000Z
-       */
+      
       const formattedDeadline = deadline
         ? new Date(
             `${deadline}T00:00:00.000Z`,
@@ -425,47 +418,55 @@ export default function ProjectManagerTasksPage() {
         >
           {/* Task Title */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Task Title
-            </label>
+           <label
+  htmlFor="task-title"
+  className="text-sm font-medium"
+>
+  Task Title
+</label>
 
-            <input
-              type="text"
-              value={title}
-              onChange={(event) =>
-                setTitle(event.target.value)
-              }
-              placeholder="Enter task title"
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-            />
+<input
+  id="task-title"
+  type="text"
+  value={title}
+  onChange={(event) => setTitle(event.target.value)}
+  placeholder="Enter task title"
+  className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+/>
           </div>
 
           {/* Description */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Description
-            </label>
+         <div className="space-y-2">
+  <label
+    htmlFor="task-description"
+    className="text-sm font-medium"
+  >
+    Description
+  </label>
 
-            <textarea
-              value={description}
-              onChange={(event) =>
-                setDescription(
-                  event.target.value,
-                )
-              }
-              placeholder="Enter task description"
-              rows={4}
-              className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
+  <textarea
+    id="task-description"
+    value={description}
+    onChange={(event) =>
+      setDescription(event.target.value)
+    }
+    placeholder="Enter task description"
+    rows={4}
+    className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+  />
+</div>
 
           {/* Project */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label
+              htmlFor="task-project"
+              className="text-sm font-medium"
+            >
               Project
             </label>
 
             <select
+              id="task-project"
               value={projectId}
               onChange={(event) =>
                 setProjectId(
@@ -491,11 +492,15 @@ export default function ProjectManagerTasksPage() {
 
           {/* Priority */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label
+              htmlFor="task-priority"
+              className="text-sm font-medium"
+            >
               Priority
             </label>
 
             <select
+              id="task-priority"
               value={priority}
               onChange={(event) =>
                 setPriority(
@@ -519,11 +524,15 @@ export default function ProjectManagerTasksPage() {
 
           {/* Deadline */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label
+              htmlFor="task-deadline"
+              className="text-sm font-medium"
+            >
               Deadline
             </label>
 
             <input
+              id="task-deadline"
               type="date"
               value={deadline}
               onChange={(event) =>
@@ -548,9 +557,7 @@ export default function ProjectManagerTasksPage() {
         </form>
       </div>
 
-      {/* ========================= */}
       {/* ALL TASKS */}
-      {/* ========================= */}
 
       <div className="rounded-xl border bg-card shadow-sm">
         <div className="border-b p-6">

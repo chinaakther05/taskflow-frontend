@@ -140,9 +140,7 @@ type UpdateTaskPayload = {
   deadline?: string | null;
 };
 
-/* --------------------------------------------------
-   API Functions
--------------------------------------------------- */
+/*  API Functions*/
 
 async function getProjects(
   organizationId: string,
@@ -196,9 +194,7 @@ async function deleteTask(taskId: string) {
   });
 }
 
-/* --------------------------------------------------
-   Helpers
--------------------------------------------------- */
+/* Helpers*/
 
 const formatStatus = (status: string) => {
   const labels: Record<string, string> = {
@@ -333,9 +329,7 @@ const getStatusClass = (
   return "bg-muted text-muted-foreground";
 };
 
-/* --------------------------------------------------
-   Page
--------------------------------------------------- */
+/*  Page*/
 
 export default function TasksPage() {
   const queryClient = useQueryClient();
@@ -368,9 +362,7 @@ export default function TasksPage() {
   const [formError, setFormError] =
     useState("");
 
-  /* --------------------------------------------------
-     Organizations
-  -------------------------------------------------- */
+  /*Organizations*/
 
   const {
     data: organizationsData,
@@ -388,9 +380,7 @@ export default function TasksPage() {
   const organizationId =
     organizations[0]?.id;
 
-  /* --------------------------------------------------
-     Projects
-  -------------------------------------------------- */
+  /*  Projects */
 
   const {
     data: projectsData,
@@ -407,9 +397,7 @@ export default function TasksPage() {
     retry: false,
   });
 
-  /* --------------------------------------------------
-     Members
-  -------------------------------------------------- */
+  /*  Members*/
 
   const {
     data: membersData,
@@ -431,9 +419,7 @@ export default function TasksPage() {
   const members =
     membersData?.data ?? [];
 
-  /* --------------------------------------------------
-     Automatically select first project
-  -------------------------------------------------- */
+  /*  Automatically select first project*/
 
   useEffect(() => {
     if (
@@ -449,9 +435,7 @@ export default function TasksPage() {
     selectedProjectId,
   ]);
 
-  /* --------------------------------------------------
-     Tasks
-  -------------------------------------------------- */
+  /*  Tasks */
 
   const {
     data: tasksData,
@@ -472,9 +456,7 @@ export default function TasksPage() {
   const tasks =
     tasksData?.data ?? [];
 
-  /* --------------------------------------------------
-     Reset Form
-  -------------------------------------------------- */
+  /* Reset Form */
 
   const resetForm = () => {
     setTitle("");
@@ -486,9 +468,7 @@ export default function TasksPage() {
     setFormError("");
   };
 
-  /* --------------------------------------------------
-     Create Task
-  -------------------------------------------------- */
+  /* Create Task*/
 
   const createTaskMutation =
     useMutation({
@@ -515,9 +495,7 @@ export default function TasksPage() {
       },
     });
 
-  /* --------------------------------------------------
-     Update Task
-  -------------------------------------------------- */
+  /*  Update Task */
 
   const updateTaskMutation =
     useMutation({
@@ -555,9 +533,7 @@ export default function TasksPage() {
       },
     });
 
-  /* --------------------------------------------------
-     Delete Task
-  -------------------------------------------------- */
+  /* Delete Task*/
 
   const deleteTaskMutation =
     useMutation({
@@ -573,9 +549,7 @@ export default function TasksPage() {
       },
     });
 
-  /* --------------------------------------------------
-     Quick Status Change
-  -------------------------------------------------- */
+  /*  Quick Status Change */
 
   const handleStatusChange = (
     taskId: string,
@@ -589,9 +563,7 @@ export default function TasksPage() {
     });
   };
 
-  /* --------------------------------------------------
-     Open Create Form
-  -------------------------------------------------- */
+  /* Open Create Form */
 
   const openCreateForm = () => {
     resetForm();
@@ -600,9 +572,7 @@ export default function TasksPage() {
     setIsCreateOpen(true);
   };
 
-  /* --------------------------------------------------
-     Close Form
-  -------------------------------------------------- */
+  /*Close Form*/
 
   const closeForm = () => {
     if (
@@ -618,9 +588,7 @@ export default function TasksPage() {
     setIsCreateOpen(false);
   };
 
-  /* --------------------------------------------------
-     Create Task Handler
-  -------------------------------------------------- */
+  /*  Create Task Handler*/
 
   const handleCreateTask = (
     event: React.FormEvent<HTMLFormElement>,
@@ -684,9 +652,7 @@ export default function TasksPage() {
     });
   };
 
-  /* --------------------------------------------------
-     Update Task Handler
-  -------------------------------------------------- */
+  /*  Update Task Handler */
 
   const handleUpdateTask = (
     event: React.FormEvent<HTMLFormElement>,
@@ -749,9 +715,7 @@ export default function TasksPage() {
     });
   };
 
-  /* --------------------------------------------------
-     Open Edit Form
-  -------------------------------------------------- */
+  /* Open Edit Form */
 
   const openEditForm = (
     task: Task,
@@ -787,9 +751,7 @@ export default function TasksPage() {
     );
   };
 
-  /* --------------------------------------------------
-     Delete Task Handler
-  -------------------------------------------------- */
+  /*  Delete Task Handler */
 
   const handleDeleteTask = (
     taskId: string,
@@ -808,9 +770,7 @@ export default function TasksPage() {
     );
   };
 
-  /* --------------------------------------------------
-     Project Change
-  -------------------------------------------------- */
+  /* Project Change */
 
   const handleProjectChange = (
     event: React.ChangeEvent<HTMLSelectElement>,
@@ -826,9 +786,7 @@ export default function TasksPage() {
     setIsCreateOpen(false);
   };
 
-  /* --------------------------------------------------
-     Organizations Loading
-  -------------------------------------------------- */
+  /*  Organizations Loading */
 
   if (organizationsLoading) {
     return (
@@ -841,9 +799,7 @@ export default function TasksPage() {
     );
   }
 
-  /* --------------------------------------------------
-     Organization Error
-  -------------------------------------------------- */
+  /* Organization Error */
 
   if (organizationsError) {
     return (
@@ -859,9 +815,7 @@ export default function TasksPage() {
     );
   }
 
-  /* --------------------------------------------------
-     No Organization
-  -------------------------------------------------- */
+  /*  No Organization*/
 
   if (!organizationId) {
     return (
@@ -877,9 +831,7 @@ export default function TasksPage() {
     );
   }
 
-  /* --------------------------------------------------
-     Projects Loading
-  -------------------------------------------------- */
+  /*  Projects Loading*/
 
   if (projectsLoading) {
     return (
@@ -892,9 +844,7 @@ export default function TasksPage() {
     );
   }
 
-  /* --------------------------------------------------
-     Projects Error
-  -------------------------------------------------- */
+  /*  Projects Error */
 
   if (projectsError) {
     return (
@@ -910,9 +860,7 @@ export default function TasksPage() {
     );
   }
 
-  /* --------------------------------------------------
-     UI
-  -------------------------------------------------- */
+ 
 
   return (
     <div className="space-y-6">

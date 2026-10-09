@@ -106,9 +106,9 @@ async function getSubscription(
 }
 
 export default function AdminDashboard() {
-  // ---------------------------------------
+ 
   // Get Organizations
-  // ---------------------------------------
+  
 
   const {
     data: organizationData,
@@ -125,9 +125,9 @@ export default function AdminDashboard() {
   const organization = organizations[0];
   const organizationId = organization?.id;
 
-  // ---------------------------------------
+  
   // Get Members
-  // ---------------------------------------
+
 
   const {
     data: membersData,
@@ -141,9 +141,9 @@ export default function AdminDashboard() {
 
   const members = membersData?.data ?? [];
 
-  // ---------------------------------------
+  
   // Get Projects
-  // ---------------------------------------
+  
 
   const {
     data: projectsData,
@@ -157,9 +157,9 @@ export default function AdminDashboard() {
 
   const projects = projectsData?.data ?? [];
 
-  // ---------------------------------------
+ 
   // Get Subscription
-  // ---------------------------------------
+  
 
   const {
     data: subscriptionData,
@@ -173,9 +173,9 @@ export default function AdminDashboard() {
 
   const subscription = subscriptionData?.data;
 
-  // ---------------------------------------
+
   // Calculations
-  // ---------------------------------------
+  
 
   const totalProjects = projects.length;
 
@@ -199,9 +199,9 @@ export default function AdminDashboard() {
 
   const recentProjects = projects.slice(0, 3);
 
-  // ---------------------------------------
+  
   // Loading
-  // ---------------------------------------
+  
 
   if (organizationLoading) {
     return (
@@ -214,9 +214,9 @@ export default function AdminDashboard() {
     );
   }
 
-  // ---------------------------------------
+
   // Organization Error
-  // ---------------------------------------
+
 
   if (organizationError) {
     return (
@@ -232,9 +232,9 @@ export default function AdminDashboard() {
     );
   }
 
-  // ---------------------------------------
+ 
   // No Organization
-  // ---------------------------------------
+  
 
   if (!organizationId) {
     return (
@@ -250,9 +250,9 @@ export default function AdminDashboard() {
     );
   }
 
-  // ---------------------------------------
+ 
   // Dashboard
-  // ---------------------------------------
+ 
 
   return (
     <div className="space-y-6">

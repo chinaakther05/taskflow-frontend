@@ -238,7 +238,6 @@ export default function LoginForm() {
 
   <Button
     type="button"
-    variant="outline"
     className="mt-3 w-full"
     disabled={!demoRole || loginPending}
     onClick={() => {
@@ -278,7 +277,7 @@ export default function LoginForm() {
             type: "success",
           });
 
-          // Demo role অনুযায়ী dashboard
+          // Demo role 
           if (demoRole === "admin") {
             window.location.href = "/Admin";
           } else if (demoRole === "manager") {

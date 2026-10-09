@@ -132,14 +132,7 @@ const DashboardLayout = ({
 
   const role = user?.role;
 
-  /*
-   * Role detection
-   *
-   * Normally we use user.role from the API.
-   * We also check the current route so that
-   * Project Manager and Member dashboards
-   * work even if role is not returned by the API.
-   */
+  
   const isProjectManager =
     role === "PROJECT_MANAGER" ||
     pathname.startsWith("/project-manager");

@@ -12,8 +12,8 @@ export default function HomePage() {
   return (
     <div>
       <Hero />
-      <Trusted/>
       <Features />
+      <Trusted/>
       <HowItWorks />
       <RoleBasedAccess />
       <DashboardPreview />
