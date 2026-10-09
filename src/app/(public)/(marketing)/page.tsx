@@ -5,8 +5,9 @@ import FinalCTA from "@/components/modules/homepage/FinalCTA";
 import Hero from "@/components/modules/homepage/Hero";
 import HowItWorks from "@/components/modules/homepage/HowItWorks";
 import Pricing from "@/components/modules/homepage/Pricing";
-import RoleBasedAccess from "@/components/modules/homepage/RoleBasedAccess";
 import Trusted from "@/components/modules/homepage/Trusted";
+import RoleBasedAccess from "@/components/modules/homepage/RoleBasedAccess";
+
 
 export default function HomePage() {
   return (
