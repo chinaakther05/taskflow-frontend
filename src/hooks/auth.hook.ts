@@ -34,9 +34,10 @@ export function useGetMe() {
       : null;
 
   return useQuery({
-    queryKey: ["me"],
+    queryKey: ["me", token],
     queryFn: getMe,
     enabled: !!token,
+    retry: false,
   });
 }
 
